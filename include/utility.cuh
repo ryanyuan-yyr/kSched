@@ -1,7 +1,5 @@
 #include <sys/time.h>
 
-#include <exception>
-
 #ifndef _COMMON_H
 #define _COMMON_H
 
@@ -60,6 +58,13 @@
     }                                                                      \
   }
 
+#define EXPORT extern "C"
+
+// fprintf(stderr, "Error: %s at %s:%d\n", (msg), __FILE__, __LINE__);
+// exit(1);
+#define ERR(msg) \
+  { printf("Error: %s at %s:%d\n", (msg), __FILE__, __LINE__); }
+
 inline double seconds() {
   struct timeval tp;
   struct timezone tzp;
@@ -73,11 +78,11 @@ class FixSizeBox {
   char storage[SZ];
 
  public:
+  FixSizeBox() = default;
   FixSizeBox(const FixSizeBox& other) = default;
   template <class Ty>
   FixSizeBox(Ty& data) {
-    if (sizeof(Ty) > SZ)
-      throw std::logic_error("FixSizeBox: data size exceeds max size");
+    if (sizeof(Ty) > SZ) ERR("FixSizeBox: data size exceeds max size");
     *reinterpret_cast<Ty*>(storage) = data;
   }
   FixSizeBox& operator=(const FixSizeBox&) = default;
@@ -88,5 +93,27 @@ class FixSizeBox {
     return reinterpret_cast<Ty*>(storage);
   }
 };
+
+template <class Ty>
+class Range {
+ private:
+  Ty begin, end;
+
+ public:
+  Range(Ty begin, Ty end) : begin(begin), end(end) {
+    if (end < begin) {
+      ERR("Range: end < begin");
+    }
+  }
+  __device__ __host__ bool contains(Ty v) { return v >= begin && v < end; }
+  __device__ __host__ bool contains(Range<Ty> r) {
+    return r.begin >= begin && r.end <= end;
+  }
+  __device__ __host__ Ty low() { return begin; }
+  __device__ __host__ Ty high() { return end; }
+  __device__ __host__ Ty len() { return end - begin; }
+};
+
+int getSPcores(cudaDeviceProp devProp);
 
 #endif  // _COMMON_H

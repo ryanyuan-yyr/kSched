@@ -32,7 +32,9 @@
 
 #include <utility>
 
-#include "matrix_mul_split.cuh"
+#include "ksched.cuh"
+#include "matrix_mul.cuh"
+#include "utility.cuh"
 
 const float valB = 0.01f;
 
@@ -42,9 +44,7 @@ const float valB = 0.01f;
  */
 #define BLOCK_SIZE 32
 
-// template <int BLOCK_SIZE>
-__global__ void
-matrixMulCUDA(Args args, KernelSlice kernel_slice) {
+__global__ void matrix_mul(Args args, KernelSlice kernel_slice) {
   dim3 blockIdx = kernel_slice.get_original_block_idx();
 
   // Block index
@@ -55,7 +55,7 @@ matrixMulCUDA(Args args, KernelSlice kernel_slice) {
   unsigned int tx = threadIdx.x;
   unsigned int ty = threadIdx.y;
 
-  MatrixMulSplitArgs* mm_args = args.as<MatrixMulSplitArgs>();
+  MatrixMulArgs *mm_args = args.as<MatrixMulArgs>();
 
   float *A = mm_args->matrixA, *B = mm_args->matrixB, *C = mm_args->matrixC;
   int wA = mm_args->wA, wB = mm_args->wB;
@@ -129,7 +129,7 @@ void constantInit(float *data, int size, float val) {
 /**
  * Program main
  */
-KernelConfig pre_process() {
+EXPORT KernelConfig pre_process() {
   printf("[Matrix Multiply Using CUDA] - Starting...\n");
 
   // Use a larger block size for Fermi and above
@@ -186,22 +186,23 @@ KernelConfig pre_process() {
   dim3 grid_dim(dimsB.x / block_dim.x, dimsA.y / block_dim.y);
   printf("grid(%d, %d)\n", dimsB.x / block_dim.x, dimsA.y / block_dim.y);
 
-  MatrixMulSplitArgs args = MatrixMulSplitArgs{d_A, d_B, d_C, dimsA.x, dimsB.x};
-  return KernelConfig{(KernelPtr)matrixMulCUDA, args, grid_dim, block_dim};
+  MatrixMulArgs args = MatrixMulArgs{d_A, d_B, d_C, dimsA.x, dimsB.x};
+  MatrixMulContext context{h_A, h_B, h_C};
+  return KernelConfig{(KernelPtr)matrix_mul, args, grid_dim, block_dim,
+                      Context{context}};
 }
 
-void post_process(KernelConfig &kernel_config) {
-  MatrixMulSplitArgs* mm_args = kernel_config.get_args<MatrixMulSplitArgs>();
+DEFAULT_EXECUTE(matrix_mul);
+
+EXPORT void post_process(Kernel &kernel) {
+  MatrixMulArgs *mm_args = kernel.get_args<MatrixMulArgs>();
   dim3 dimsA(mm_args->wA, mm_args->wB, 1);
   dim3 dimsB(mm_args->wB, mm_args->wA, 1);
   dim3 dimsC(dimsB.x, dimsA.y, 1);
   unsigned int mem_size_C = dimsC.x * dimsC.y * sizeof(float);
-  float *h_C = (float *)malloc(mem_size_C);
 
-  if (h_C == NULL) {
-    fprintf(stderr, "Failed to allocate host matrix C!\n");
-    exit(EXIT_FAILURE);
-  }
+  MatrixMulContext *context = kernel.get_context<MatrixMulContext>();
+  float *h_C = context->h_C;
   float *d_C = mm_args->matrixC;
   CHECK(cudaMemcpy(h_C, d_C, mem_size_C, cudaMemcpyDeviceToHost));
 
@@ -231,4 +232,8 @@ void post_process(KernelConfig &kernel_config) {
     }
   }
   if (correct) printf("MM PASS !\n");
+
+  free(context->h_A);
+  free(context->h_B);
+  free(context->h_C);
 }
