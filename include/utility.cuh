@@ -1,7 +1,8 @@
 #include <sys/time.h>
+#include <time.h>
 
-#ifndef _COMMON_H
-#define _COMMON_H
+#ifndef UTILITY
+#define UTILITY
 
 #define CHECK(call)                                          \
   {                                                          \
@@ -116,4 +117,6 @@ class Range {
 
 int getSPcores(cudaDeviceProp devProp);
 
-#endif  // _COMMON_H
+double current_seconds(void);
+
+#endif  // UTILITY

@@ -61,7 +61,7 @@ __global__ void matrix_transpose(Args args, KernelSlice kernel_slice) {
   }
 }
 
-const int trnsp_size = TILE_DIM * (1 << 8);
+const int trnsp_size = TILE_DIM * (1 << 9);
 const size_t trnsp_mem_size =
     static_cast<size_t>(sizeof(float) * trnsp_size * trnsp_size);
 
@@ -114,10 +114,10 @@ EXPORT void post_process(Kernel &kernel) {
   bool correct = true;
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < width; j++) {
-      int true_value = i + j * width;
-      int real_value = h_odata[i * width + j];
+      float true_value = i + j * width;
+      float real_value = h_odata[i * width + j];
       if (true_value != real_value) {
-        printf("Matrix_transpose error: i %d, j %d, expected %d, found %d\n", i,
+        printf("Matrix_transpose error: i %d, j %d, expected %f, found %f\n", i,
                j, true_value, real_value);
         correct = false;
         goto outer;

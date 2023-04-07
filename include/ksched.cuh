@@ -79,6 +79,8 @@ class KernelSlice {
 
     return dim3(x, y, z);
   }
+
+  __device__ dim3 get_original_grid_idx() { return grid_dim; }
 };
 
 struct KernelConfig {
