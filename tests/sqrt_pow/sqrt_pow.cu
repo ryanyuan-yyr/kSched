@@ -36,7 +36,7 @@ __global__ void sqrt_pow(Args args, KernelSlice kernel_slice) {
 
 EXPORT KernelConfig pre_process() {
   dim3 block_dim = dim3(32);
-  dim3 grid_dim = dim3(1 << 10);
+  dim3 grid_dim = dim3(1 << 11);
 
   size_t mem_size = sizeof(double) * grid_dim.x * block_dim.x;
 

@@ -1,6 +1,6 @@
 runtest: 
 
-TESTS := build/matrix_mul.so build/matrix_transpose.so build/sqrt_pow.so
+TESTS := build/matrix_mul.so build/matrix_transpose.so build/sqrt_pow.so build/vec_add.so
 # TESTS := build/matrix_transpose.so
 CFLAGS := -Wall -Werror -O3 -g -fPIC
 NVCC_FLAGS:= -Iinclude --compiler-options="$(CFLAGS)"
@@ -26,6 +26,9 @@ build/matrix_transpose.so: tests/matrix_transpose/matrix_transpose.cu $(COMMON_D
 
 build/sqrt_pow.so: tests/sqrt_pow/sqrt_pow.cu $(COMMON_DEPENDENCY)
 	$(NVCC) --shared tests/sqrt_pow/sqrt_pow.cu $(NVCC_FLAGS) -o build/sqrt_pow.so
+
+build/vec_add.so: tests/vec_add/vec_add.cu $(COMMON_DEPENDENCY)
+	$(NVCC) --shared tests/vec_add/vec_add.cu $(NVCC_FLAGS) -o build/vec_add.so
 
 build/utility.o: src/utility/utility.cu include/utility.cuh
 	$(NVCC) -c src/utility/utility.cu $(NVCC_FLAGS) -o build/utility.o

@@ -1,6 +1,6 @@
 struct MatrixTransposeArgs {
     float* idata, *odata;
-    int width;
+    unsigned long width;
 };
 
 struct MatrixTransposeContext{

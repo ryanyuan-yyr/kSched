@@ -130,7 +130,7 @@ void constantInit(float *data, int size, float val) {
  * Program main
  */
 EXPORT KernelConfig pre_process() {
-  printf("[Matrix Multiply Using CUDA] - Starting...\n");
+  // printf("[Matrix Multiply Using CUDA] - Starting...\n");
 
   // Use a larger block size for Fermi and above
   int block_size = 32;
@@ -144,8 +144,8 @@ EXPORT KernelConfig pre_process() {
     exit(EXIT_FAILURE);
   }
 
-  printf("MatrixA(%d,%d), MatrixB(%d,%d)\n", dimsA.x, dimsA.y, dimsB.x,
-         dimsB.y);
+  // printf("MatrixA(%d,%d), MatrixB(%d,%d)\n", dimsA.x, dimsA.y, dimsB.x,
+  //        dimsB.y);
 
   // Allocate host memory for matrices A and B
   unsigned int size_A = dimsA.x * dimsA.y;
@@ -182,9 +182,9 @@ EXPORT KernelConfig pre_process() {
 
   // Setup execution parameters
   dim3 block_dim(block_size, block_size);
-  printf("threads(%d, %d)\n", block_size, block_size);
+  // printf("threads(%d, %d)\n", block_size, block_size);
   dim3 grid_dim(dimsB.x / block_dim.x, dimsA.y / block_dim.y);
-  printf("grid(%d, %d)\n", dimsB.x / block_dim.x, dimsA.y / block_dim.y);
+  // printf("grid(%d, %d)\n", dimsB.x / block_dim.x, dimsA.y / block_dim.y);
 
   MatrixMulArgs args = MatrixMulArgs{d_A, d_B, d_C, dimsA.x, dimsB.x};
   MatrixMulContext context{h_A, h_B, h_C};
@@ -206,7 +206,7 @@ EXPORT void post_process(Kernel &kernel) {
   float *d_C = mm_args->matrixC;
   CHECK(cudaMemcpy(h_C, d_C, mem_size_C, cudaMemcpyDeviceToHost));
 
-  printf("Checking computed result for correctness: \n");
+  // printf("Checking computed result for correctness: \n");
   bool correct = true;
 
   // test relative error by the formula

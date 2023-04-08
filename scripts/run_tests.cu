@@ -9,16 +9,21 @@ __host__ int main() {
   const char* iname = "CUDA_DEVICE_MAX_CONNECTIONS";
   setenv(iname, "32", 1);
 
-  Kernel matrix_mul_kernel{"build/matrix_mul.so"};
-  Kernel matrix_transpose_kernel{"build/matrix_transpose.so"};
+  cudaDeviceProp devProp;
+  cudaGetDeviceProperties(&devProp, 0);
 
-  constexpr int NSTREAM = 8;
+  printf("Number of SM %d; Number of cores per SM: %d\n", devProp.multiProcessorCount, get_ncore_pSM(devProp));
+
+  Kernel matrix_mul_kernel{"build/vec_add.so"};
+  Kernel matrix_transpose_kernel{"build/sqrt_pow.so"};
+
+  constexpr int NSTREAM = 2;
   cudaStream_t streams[NSTREAM];
   for (size_t i = 0; i < NSTREAM; i++) {
     cudaStreamCreate(streams + i);
   }
 
-  constexpr int mm_step = 3, mt_step = 24;
+  constexpr int mm_step = 68*1*128, mt_step = 68*2*7;
   double start, end;
   unsigned mm_nblock, mt_nblock;
 
@@ -41,6 +46,27 @@ __host__ int main() {
   matrix_mul_kernel.post_process();
   matrix_transpose_kernel.post_process();
 
+  // not sliced
+  matrix_mul_kernel.pre_process();
+  matrix_transpose_kernel.pre_process();
+  mm_nblock = matrix_mul_kernel.get_block_num();
+  mt_nblock = matrix_transpose_kernel.get_block_num();
+
+  start = current_seconds();
+
+  matrix_mul_kernel.launch(KernelSliceRange{0, mm_nblock}, (cudaStream_t)NULL);
+  matrix_transpose_kernel.launch(KernelSliceRange{0, mt_nblock}, (cudaStream_t)NULL);
+  CHECK(cudaDeviceSynchronize());
+
+  end = current_seconds();
+
+  printf("============================== Not sliced Duration %lf\n", end - start);
+
+  matrix_mul_kernel.post_process();
+  matrix_transpose_kernel.post_process();
+
+  
+
   // Mix
   matrix_mul_kernel.pre_process();
   matrix_transpose_kernel.pre_process();
@@ -57,7 +83,7 @@ __host__ int main() {
           streams[iter % (NSTREAM / 2)]);
       i += mm_step;
     }
-    for (int mt_iter = 0; mt_iter < 30; mt_iter++) {
+    for (int mt_iter = 0; mt_iter < 1; mt_iter++) {
       if (j < mt_nblock) {
         matrix_transpose_kernel.launch(
             KernelSliceRange{j, std::min(j + mt_step, mt_nblock)},
@@ -75,25 +101,6 @@ __host__ int main() {
   end = current_seconds();
 
   printf("============================== Mix Duration %lf\n", end - start);
-
-  matrix_mul_kernel.post_process();
-  matrix_transpose_kernel.post_process();
-
-  // not sliced
-  matrix_mul_kernel.pre_process();
-  matrix_transpose_kernel.pre_process();
-  mm_nblock = matrix_mul_kernel.get_block_num();
-  mt_nblock = matrix_transpose_kernel.get_block_num();
-
-  start = current_seconds();
-
-  matrix_mul_kernel.launch(KernelSliceRange{0, mm_nblock}, (cudaStream_t)NULL);
-  matrix_transpose_kernel.launch(KernelSliceRange{0, mt_nblock}, (cudaStream_t)NULL);
-  CHECK(cudaDeviceSynchronize());
-
-  end = current_seconds();
-
-  printf("Not ============================== sliced Duration %lf\n", end - start);
 
   matrix_mul_kernel.post_process();
   matrix_transpose_kernel.post_process();

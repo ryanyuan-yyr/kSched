@@ -115,7 +115,7 @@ class Range {
   __device__ __host__ Ty len() { return end - begin; }
 };
 
-int getSPcores(cudaDeviceProp devProp);
+int get_ncore_pSM(cudaDeviceProp& devProp);
 
 double current_seconds(void);
 

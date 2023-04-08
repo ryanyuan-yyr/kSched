@@ -61,7 +61,7 @@ __global__ void matrix_transpose(Args args, KernelSlice kernel_slice) {
   }
 }
 
-const int trnsp_size = TILE_DIM * (1 << 9);
+const size_t trnsp_size = TILE_DIM * (1 << 12);
 const size_t trnsp_mem_size =
     static_cast<size_t>(sizeof(float) * trnsp_size * trnsp_size);
 
@@ -86,11 +86,11 @@ EXPORT KernelConfig pre_process() {
   CHECK(cudaMalloc((void **)&d_idata, trnsp_mem_size));
   CHECK(cudaMalloc((void **)&d_odata, trnsp_mem_size));
 
-  for (int i = 0; i < (trnsp_size * trnsp_size); ++i) h_idata[i] = (float)i;
+  for (size_t i = 0; i < (trnsp_size * trnsp_size); ++i) h_idata[i] = (float)i;
 
   CHECK(cudaMemcpy(d_idata, h_idata, trnsp_mem_size, cudaMemcpyHostToDevice));
   printf(
-      "\nMatrix size: %dx%d (%dx%d tiles), tile size: %dx%d, block size: "
+      "\nMatrix size: %lux%lu (%dx%d tiles), tile size: %dx%d, block size: "
       "%dx%d\n\n",
       trnsp_size, trnsp_size, trnsp_grid.x, trnsp_grid.y, TILE_DIM, TILE_DIM,
       trnsp_threads.x, trnsp_threads.y);
@@ -112,12 +112,12 @@ EXPORT void post_process(Kernel &kernel) {
   CHECK(
       cudaMemcpy(h_odata, args->odata, trnsp_mem_size, cudaMemcpyDeviceToHost));
   bool correct = true;
-  for (int i = 0; i < width; i++) {
-    for (int j = 0; j < width; j++) {
+  for (size_t i = 0; i < width; i++) {
+    for (size_t j = 0; j < width; j++) {
       float true_value = i + j * width;
       float real_value = h_odata[i * width + j];
       if (true_value != real_value) {
-        printf("Matrix_transpose error: i %d, j %d, expected %f, found %f\n", i,
+        printf("Matrix_transpose error: i %lu, j %lu, expected %f, found %f\n", i,
                j, true_value, real_value);
         correct = false;
         goto outer;
