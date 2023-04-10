@@ -61,7 +61,7 @@ __global__ void matrix_transpose(Args args, KernelSlice kernel_slice) {
   }
 }
 
-const size_t trnsp_size = TILE_DIM * (1 << 12);
+const size_t trnsp_size = TILE_DIM * (1 << 9);
 const size_t trnsp_mem_size =
     static_cast<size_t>(sizeof(float) * trnsp_size * trnsp_size);
 

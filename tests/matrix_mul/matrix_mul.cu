@@ -42,7 +42,7 @@ const float valB = 0.01f;
  * Matrix multiplication (CUDA Kernel) on the device: C = A * B
  * wA is A's width and wB is B's width
  */
-#define BLOCK_SIZE 32
+#define BLOCK_SIZE 16
 
 __global__ void matrix_mul(Args args, KernelSlice kernel_slice) {
   dim3 blockIdx = kernel_slice.get_original_block_idx();
@@ -133,10 +133,10 @@ EXPORT KernelConfig pre_process() {
   // printf("[Matrix Multiply Using CUDA] - Starting...\n");
 
   // Use a larger block size for Fermi and above
-  int block_size = 32;
+  // int BLOCK_SIZE = 32;
 
-  dim3 dimsA(1 << 12, 1 << 12, 1);
-  dim3 dimsB(1 << 12, 1 << 12, 1);
+  dim3 dimsA(1 << 10, 1 << 10, 1);
+  dim3 dimsB(1 << 10, 1 << 10, 1);
 
   if (dimsA.x != dimsB.y) {
     printf("Error: outer matrix dimensions must be equal. (%d != %d)\n",
@@ -181,8 +181,8 @@ EXPORT KernelConfig pre_process() {
   CHECK(cudaMemcpy(d_B, h_B, mem_size_B, cudaMemcpyHostToDevice));
 
   // Setup execution parameters
-  dim3 block_dim(block_size, block_size);
-  // printf("threads(%d, %d)\n", block_size, block_size);
+  dim3 block_dim(BLOCK_SIZE, BLOCK_SIZE);
+  // printf("threads(%d, %d)\n", BLOCK_SIZE, BLOCK_SIZE);
   dim3 grid_dim(dimsB.x / block_dim.x, dimsA.y / block_dim.y);
   // printf("grid(%d, %d)\n", dimsB.x / block_dim.x, dimsA.y / block_dim.y);
 
