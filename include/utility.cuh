@@ -1,6 +1,12 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include <functional>
+#include <limits>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+
 #ifndef UTILITY
 #define UTILITY
 
@@ -118,5 +124,89 @@ class Range {
 int get_ncore_pSM(cudaDeviceProp& devProp);
 
 double current_seconds(void);
+
+template <class Ty>
+class Axes {
+ public:
+  Ty first{}, second{};
+
+  bool operator==(const Axes& other) const {
+    return first == other.first && second == other.second;
+  }
+
+  bool operator!=(const Axes& other) const { return !(*this == other); }
+
+  Axes& operator+=(const Axes& other) {
+    first += other.first;
+    second += other.second;
+    return *this;
+  }
+  Axes operator+(const Axes& other) const {
+    Axes res{*this};
+    return res += other;
+  }
+
+  Axes& operator-=(const Axes& other) {
+    first -= other.first;
+    second -= other.second;
+    return *this;
+  }
+  Axes operator-(const Axes& other) const {
+    Axes res{*this};
+    return res -= other;
+  }
+
+  bool less_than(const Axes& other) const {
+    return first < other.first && second < other.second;
+  }
+  bool less_eq(const Axes& other) const {
+    return first <= other.first && second <= other.second;
+  }
+
+  Axes& operator*=(Ty coeff) {
+    first *= coeff;
+    second *= coeff;
+    return *this;
+  }
+
+  Axes operator*(Ty coeff) const {
+    Axes res{*this};
+    return res *= coeff;
+  }
+
+  Axes& operator*=(const Axes& other) {
+    first *= other.first;
+    second *= other.second;
+    return *this;
+  }
+
+  Axes operator*(const Axes& other) const {
+    Axes res{*this};
+    return res *= other;
+  }
+
+  Axes& operator/=(Ty coeff) {
+    first /= coeff;
+    second /= coeff;
+    return *this;
+  }
+
+  Axes operator/(Ty coeff) const {
+    Axes res{*this};
+    return res /= coeff;
+  }
+};
+
+template <class Ty>
+class AxesHash {
+ public:
+  size_t operator()(const Axes<Ty>& p) const {
+    auto h1 = std::hash<Ty>()(p.first);
+    auto h2 = std::hash<Ty>()(p.second);
+    return h1 ^ (h2 << 1);
+  }
+};
+
+using Config = Axes<int>;
 
 #endif  // UTILITY

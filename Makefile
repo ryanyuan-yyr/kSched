@@ -7,6 +7,8 @@ NVCC_FLAGS:= -Iinclude --compiler-options="$(CFLAGS)"
 NVCC := nvcc
 COMMON_DEPENDENCY := include/* build/utility.o
 
+# runtests
+
 runtests:build_runtests
 	./bin/runtests
 
@@ -15,8 +17,39 @@ build_runtests: bin/runtests
 bin/runtests: build/run_tests.o $(TESTS) $(COMMON_DEPENDENCY)
 	$(NVCC) build/run_tests.o $(NVCC_FLAGS) $(TESTS) build/utility.o -o bin/runtests
 
-build/run_tests.o: scripts/run_tests.cu $(COMMON_DEPENDENCY)
-	$(NVCC) -c scripts/run_tests.cu $(NVCC_FLAGS) -o build/run_tests.o
+build/run_tests.o: src/run_tests.cu $(COMMON_DEPENDENCY)
+	$(NVCC) -c src/run_tests.cu $(NVCC_FLAGS) -o build/run_tests.o
+
+
+# eval_config
+
+eval_config:build_eval_config
+	./bin/eval_config
+
+build_eval_config: bin/eval_config
+
+bin/eval_config: build/eval_config.o $(TESTS) $(COMMON_DEPENDENCY)
+	$(NVCC) build/eval_config.o $(NVCC_FLAGS) $(TESTS) build/utility.o -o bin/eval_config
+
+build/eval_config.o: src/eval_config.cu $(COMMON_DEPENDENCY)
+	$(NVCC) -c src/eval_config.cu $(NVCC_FLAGS) -o build/eval_config.o
+
+
+# automatic_config
+
+automatic_config:build_automatic_config
+	./bin/automatic_config
+
+build_automatic_config: bin/automatic_config
+
+bin/automatic_config: build/automatic_config.o $(TESTS) $(COMMON_DEPENDENCY)
+	$(NVCC) build/automatic_config.o $(NVCC_FLAGS) $(TESTS) build/utility.o -o bin/automatic_config
+
+build/automatic_config.o: src/automatic_config.cu $(COMMON_DEPENDENCY)
+	$(NVCC) -c src/automatic_config.cu $(NVCC_FLAGS) -o build/automatic_config.o
+
+
+# tests
 
 build/matrix_mul.so: tests/matrix_mul/matrix_mul.cu $(COMMON_DEPENDENCY)
 	$(NVCC) --shared tests/matrix_mul/matrix_mul.cu $(NVCC_FLAGS) -o build/matrix_mul.so
