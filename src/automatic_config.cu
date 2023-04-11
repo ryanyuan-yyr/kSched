@@ -13,7 +13,7 @@ __host__ int main() {
   setenv(iname, "32", 1);
 
   Kernel vec_add_kernel{"build/vec_add.so"};
-  Kernel sqrt_pow_kernel{"build/sqrt_pow.so"};
+  Kernel sqrt_pow_kernel{"build/matrix_mul.so"};
 
   constexpr int NSTREAM = 2;
   cudaStream_t streams[NSTREAM];
@@ -55,18 +55,30 @@ __host__ int main() {
     printf("===== Start config %d, %d\n", current.first, current.second);
     CoSchedKernels::Stat stat{};
     double current_time;
-    for (Config step{128, 4}, radius{}; step.first > 1 || step.second > 1;
-         radius = step * 2, step.first = step.first > 1 ? step.first / 16 : 1,
-         step.second = step.second > 1 ? step.second / 2 : 1) {
-      auto res =
-          co_kernel.get_local_optimal(current, step * granularity, subregion,
-                                      nrepeat, radius * granularity, &stat);
+    for (Config step{boundary / 512}, radius{};
+         step.first > 1 || step.second > 1;
+         radius = step * 2,
+         step.first = step.first > 1
+                          ? step.first / std::max(boundary.first / 512 / 4, 2)
+                          : 1,
+         step.second =
+             step.second > 1
+                 ? step.second / std::max(boundary.second / 512 / 4, 2)
+                 : 1) {
+      auto res = co_kernel.get_local_optimal(current, step * granularity,
+                                             subregion, nrepeat,
+                                             radius * granularity, &stat, true);
 
       current = res.first;
       current_time = res.second;
-      printf("Opt %d %d\n", current.first, current.second);
+      printf("Sampled opt %d %d\n", current.first, current.second);
     }
-    printf("config %d, %d; time %lf; steps %u, cache hit %u\n", current.first,
-           current.second, current_time, stat.steps, stat.cache_hit);
+    co_kernel.flush_cache();
+    printf(
+        "config %d, %d; sampling time %lf, true time %lf; steps %u, cache hit "
+        "%u\n",
+        current.first, current.second, current_time,
+        co_kernel.eval_cosched_time(current, nrepeat, false, false, false),
+        stat.steps, stat.cache_hit);
   }
 }

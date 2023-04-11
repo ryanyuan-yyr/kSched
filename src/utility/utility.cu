@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include "utility.cuh"
 
 int get_ncore_pSM(cudaDeviceProp& devProp) {

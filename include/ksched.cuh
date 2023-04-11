@@ -3,6 +3,7 @@
 #include <dlfcn.h>
 #include <stdlib.h>
 
+#include <cmath>
 #include <memory>
 
 #include "utility.cuh"
@@ -238,46 +239,79 @@ class CoSchedKernels {
            dev_prop.multiProcessorCount;
   }
 
-  double eval_cosched_time(Config config, int repeat) {
+  inline void flush_cache() { cosched_time_cache.clear(); }
+
+  /**
+   * Returns evaluated co-scheduling time with configure `config`
+   *
+   * @param repeat time of repeat
+   * @param sampling if true, only part of the kernel will be executed
+   */
+  double eval_cosched_time(Config config, int repeat, bool sampling = false,
+                           bool rcaching = true, bool wcaching = true,
+                           bool* cached = nullptr) {
+    if (rcaching) {
+      auto obj = cosched_time_cache.find(config);
+      if (obj != cosched_time_cache.end()) {
+        if (cached) *cached = true;
+        return obj->second;
+      } else {
+        if (cached) *cached = false;
+      }
+    }
+
     unsigned nblock_1 = kernel1.get_block_num();
     unsigned nblock_2 = kernel2.get_block_num();
 
     double time_sum = 0;
     for (int iter = 0; iter < repeat; iter++) {
       double start, end;
-      start = current_seconds();
 
-      for (unsigned i = 0, j = 0, iter = 0; i < nblock_1 || j < nblock_2;
-           iter++) {
-        if (i < nblock_1) {
-          launch1(KernelSliceRange{i, std::min(i + config.first, nblock_1)});
-          i += config.first;
+      if (sampling) {
+        unsigned nslice_1 = nblock_1 / config.first;
+        unsigned nslice_2 = nblock_2 / config.second;
+        unsigned ratio = std::min(nslice_1, nslice_2) / 2;
+        unsigned nlaunch_block_1 = nslice_1 / ratio * config.first;
+        unsigned nlaunch_block_2 = nslice_2 / ratio * config.second;
+        start = current_seconds();
+        for (unsigned i = 0, j = 0, iter = 0;
+             i < nlaunch_block_1 || j < nlaunch_block_2; iter++) {
+          if (i < nblock_1) {
+            launch1(KernelSliceRange{i, std::min(i + config.first, nblock_1)});
+            i += config.first;
+          }
+          if (j < nblock_2) {
+            launch2(KernelSliceRange{j, std::min(j + config.second, nblock_2)});
+            j += config.second;
+          }
         }
-        if (j < nblock_2) {
-          launch2(KernelSliceRange{j, std::min(j + config.second, nblock_2)});
-          j += config.second;
+        CHECK(cudaDeviceSynchronize());
+        end = current_seconds();
+        time_sum +=
+            (end - start) *
+            std::sqrt((static_cast<double>(nblock_1) / nlaunch_block_1) *
+                      (static_cast<double>(nblock_2) / nlaunch_block_2));
+      } else {
+        start = current_seconds();
+        for (unsigned i = 0, j = 0, iter = 0; i < nblock_1 || j < nblock_2;
+             iter++) {
+          if (i < nblock_1) {
+            launch1(KernelSliceRange{i, std::min(i + config.first, nblock_1)});
+            i += config.first;
+          }
+          if (j < nblock_2) {
+            launch2(KernelSliceRange{j, std::min(j + config.second, nblock_2)});
+            j += config.second;
+          }
         }
+        CHECK(cudaDeviceSynchronize());
+        end = current_seconds();
+        time_sum += end - start;
       }
-
-      CHECK(cudaDeviceSynchronize());
-      end = current_seconds();
-      time_sum += end - start;
     }
     auto time = time_sum / repeat;
-    cosched_time_cache[config] = time;
+    if (wcaching) cosched_time_cache[config] = time;
     return time;
-  }
-
-  double get_cached_eval_cosched_time(Config config, int nrepeat,
-                                      bool* cached = nullptr) {
-    auto obj = cosched_time_cache.find(config);
-    if (obj != cosched_time_cache.end()) {
-      if (cached) *cached = true;
-      return obj->second;
-    } else {
-      if (cached) *cached = false;
-      return eval_cosched_time(config, nrepeat);
-    }
   }
 
   struct Stat {
@@ -289,12 +323,13 @@ class CoSchedKernels {
   std::pair<Config, double> get_local_optimal(Config start, Axes<int> steps,
                                               Axes<int> boundary, int nrepeat,
                                               Axes<int> radius = {},
-                                              Stat* stat = nullptr) {
+                                              Stat* stat = nullptr,
+                                              bool sampling = false) {
     int untested_neighbor_bit_mask = 0b1111;
     Config current = start;
     bool cache_stat;
     double current_time =
-        get_cached_eval_cosched_time(current, nrepeat, &cache_stat);
+        eval_cosched_time(current, nrepeat, sampling, true, true, &cache_stat);
     if (stat) {
       if (cache_stat)
         stat->cache_hit++;
@@ -328,8 +363,8 @@ class CoSchedKernels {
           continue;
         }
 
-        double neighbor_time =
-            get_cached_eval_cosched_time(neighbor, nrepeat, &cache_stat);
+        double neighbor_time = eval_cosched_time(neighbor, nrepeat, sampling,
+                                                 true, true & cache_stat);
         if (stat) {
           if (cache_stat)
             stat->cache_hit++;
