@@ -4,7 +4,7 @@
 
 #include <utility>
 
-#include "ksched.cuh"
+#include "kosched.cuh"
 #include "matrix_transpose.cuh"
 #include "utility.cuh"
 

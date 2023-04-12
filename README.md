@@ -1,4 +1,4 @@
-# kSched: A Resource-Aware Kernel Scheduler
+# Ko-Sched: A Resource-Aware Kernel Scheduler
 
 ## Profiling
 

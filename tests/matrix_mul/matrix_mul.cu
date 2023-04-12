@@ -32,7 +32,7 @@
 
 #include <utility>
 
-#include "ksched.cuh"
+#include "kosched.cuh"
 #include "matrix_mul.cuh"
 #include "utility.cuh"
 

@@ -6,7 +6,7 @@
 // CUDA runtime
 #include <cuda_runtime.h>
 
-#include "ksched.cuh"
+#include "kosched.cuh"
 #include "utility.cuh"
 
 struct SqrtPowArgs {

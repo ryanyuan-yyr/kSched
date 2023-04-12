@@ -6,7 +6,7 @@
 #include <tuple>
 #include <utility>
 
-#include "ksched.cuh"
+#include "kosched.cuh"
 
 constexpr int nrepeat = 3;
 
@@ -15,8 +15,8 @@ __host__ int main() {
   const char* iname = "CUDA_DEVICE_MAX_CONNECTIONS";
   setenv(iname, "32", 1);
 
-  Kernel vec_add_kernel{"build/matrix_mul.so"};
-  Kernel sqrt_pow_kernel{"build/matrix_transpose.so"};
+  Kernel kernel_1{"build/matrix_transpose.so"};
+  Kernel kernel_2{"build/vec_add.so"};
 
   constexpr int NSTREAM = 2;
   cudaStream_t streams[NSTREAM];
@@ -24,7 +24,7 @@ __host__ int main() {
     cudaStreamCreate(streams + i);
   }
 
-  CoSchedKernels co_kernel{vec_add_kernel, sqrt_pow_kernel, streams[0],
+  CoSchedKernels co_kernel{kernel_1, kernel_2, streams[0],
                            streams[1]};
 
   printf("Boundary %d, %d\n", co_kernel.get_boundary().first,
@@ -42,8 +42,8 @@ __host__ int main() {
   Config granularity{co_kernel.get_granularity()};
   printf("Granularity %d, %d\n", granularity.first, granularity.second);
   auto subregion = std::pair<Axes<int>, Axes<int>>{
-      {granularity.first * 1, granularity.second * 1},
-      {granularity.first * 49, granularity.second * 97}};
+      {granularity.first * 8, granularity.second * 8},
+      {granularity.first * 769, granularity.second * 385}};
   printf("Subregion (%d, %d), (%d, %d)\n", subregion.first.first,
          subregion.first.second, subregion.second.first,
          subregion.second.second);
@@ -57,6 +57,7 @@ __host__ int main() {
       output << co_kernel.eval_cosched_time({i, j}, nrepeat, false, false,
                                             false)
              << " ";
+      wait_gpu_cooling(100000, 3);
     }
     output << "\n";
   }

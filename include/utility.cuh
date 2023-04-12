@@ -2,9 +2,11 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <functional>
 #include <limits>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -21,6 +23,18 @@
               cudaGetErrorString(error));                    \
       exit(1);                                               \
     }                                                        \
+  }
+
+#define CHECK_NVML(call)                                          \
+  {                                                               \
+    const auto error = call;                                      \
+    if (error != NVML_SUCCESS) {                                  \
+      fprintf(stderr, "NVML Error: %s:%d, ", __FILE__, __LINE__); \
+      fprintf(stderr, "code: %d, reason: %s\n", error,            \
+              nvmlErrorString(error));                            \
+      nvmlShutdown();                                             \
+      exit(1);                                                    \
+    }                                                             \
   }
 
 #define CHECK_CUBLAS(call)                                             \
@@ -210,5 +224,8 @@ class AxesHash {
 };
 
 using Config = Axes<int>;
+
+bool gpu_temp_in_range(unsigned safe_region = 0);
+void wait_gpu_cooling(useconds_t interval = 100000, unsigned safe_region = 0);
 
 #endif  // UTILITY

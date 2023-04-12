@@ -3,7 +3,7 @@ import numpy as np
 
 plt.style.use('_mpl-gallery-nogrid')
 
-input_path = 'data/mm_1_49_mt_1_97'
+input_path = 'data/MX250_no_temp_detection/va_8_385_mm_2_25'
 
 Z = list()
 

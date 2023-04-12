@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <fstream>
 
-#include "ksched.cuh"
+#include "kosched.cuh"
 
 constexpr int nrepeat = 3;
 
@@ -12,8 +12,8 @@ __host__ int main() {
   const char* iname = "CUDA_DEVICE_MAX_CONNECTIONS";
   setenv(iname, "32", 1);
 
-  Kernel vec_add_kernel{"build/vec_add.so"};
-  Kernel sqrt_pow_kernel{"build/matrix_mul.so"};
+  Kernel kernel_1{"build/matrix_transpose.so"};
+  Kernel kernel_2{"build/vec_add.so"};
 
   constexpr int NSTREAM = 2;
   cudaStream_t streams[NSTREAM];
@@ -21,7 +21,7 @@ __host__ int main() {
     cudaStreamCreate(streams + i);
   }
 
-  CoSchedKernels co_kernel{vec_add_kernel, sqrt_pow_kernel, streams[0],
+  CoSchedKernels co_kernel{kernel_1, kernel_2, streams[0],
                            streams[1]};
 
   printf("Boundary %d, %d\n", co_kernel.get_boundary().first,
@@ -65,9 +65,10 @@ __host__ int main() {
              step.second > 1
                  ? step.second / std::max(boundary.second / 512 / 4, 2)
                  : 1) {
-      auto res = co_kernel.get_local_optimal(current, step * granularity,
-                                             subregion, nrepeat,
-                                             radius * granularity, &stat, true);
+      bool sampling = true;
+      auto res = co_kernel.get_local_optimal(
+          current, step * granularity, subregion, sampling ? 1 : nrepeat,
+          radius * granularity, &stat, sampling);
 
       current = res.first;
       current_time = res.second;
