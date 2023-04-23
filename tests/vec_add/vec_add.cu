@@ -101,7 +101,8 @@ __global__ void vec_add(Args args, KernelSlice kernel_slice) {
 }
 
 EXPORT KernelConfig pre_process() {
-  long int numElements = 1 << 25;
+  // long int numElements = 1 << 25;
+  long int numElements = 1 << 29;
   size_t vecAdd_size = numElements * sizeof(float);
   float *vecAdd_h_A = (float *)malloc(vecAdd_size);
   float *vecAdd_h_B =
