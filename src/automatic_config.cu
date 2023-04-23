@@ -1,3 +1,5 @@
+// #define SHOW_TRACE_EXP
+
 #include <cuda_runtime.h>
 
 #include <algorithm>
@@ -12,8 +14,21 @@ __host__ int main() {
   const char* iname = "CUDA_DEVICE_MAX_CONNECTIONS";
   setenv(iname, "32", 1);
 
-  Kernel kernel_1{"build/matrix_transpose.so"};
-  Kernel kernel_2{"build/vec_add.so"};
+  const char* tests[] = {
+   /*0*/ "build/sqrt_pow.so", 
+   /*1*/ "build/matrix_mul.so", 
+   /*2*/ "build/matrix_transpose.so", 
+   /*3*/ "build/vec_add.so"
+  };
+
+  #ifdef SHOW_TRACE_EXP
+  Kernel kernel_1{tests[3]};
+  Kernel kernel_2{tests[1]};
+  #else
+  Kernel kernel_1{tests[0]};
+  Kernel kernel_2{tests[1]};
+  #endif
+  bool sampling = true;
 
   constexpr int NSTREAM = 2;
   cudaStream_t streams[NSTREAM];
@@ -28,58 +43,94 @@ __host__ int main() {
          co_kernel.get_boundary().second);
 
   // warmup
-  printf("============================== Warm up Duration %lf\n",
-         co_kernel.eval_cosched_time(co_kernel.get_boundary(), nrepeat));
+  // printf("============================== Warm up Duration %lf\n",
+  //        co_kernel.eval_cosched_time(co_kernel.get_boundary(), nrepeat));
 
   // Serial
   printf("============================== Not sliced Duration %lf\n",
-         co_kernel.eval_cosched_time(co_kernel.get_boundary(), nrepeat));
+         co_kernel.eval_cosched_time(co_kernel.get_boundary(), nrepeat, false, false, false, nullptr, 128));
 
   // Mix
-  auto boundary = co_kernel.get_boundary();
-  auto subregion = boundary / 16;
   Config granularity{co_kernel.get_granularity()};
+  auto boundary = co_kernel.get_boundary();
+  #ifdef SHOW_TRACE_EXP
+  auto subregion = granularity*Config{60, 60};
+  #else
+  auto subregion = boundary; // / 16;
+  #endif
   printf("Granularity %d, %d\n", granularity.first, granularity.second);
 
+  printf("Config %d, %d\n", boundary.first / granularity.first, boundary.second / granularity.second);
+
+  double sampling_time = 0;
+  constexpr int min_step = 1;
+
+  #ifdef SHOW_TRACE_EXP
+  for (auto current : {
+           Config{granularity * Config{9, 44}}
+       })
+  #else
   for (auto current : {
            Config{granularity * (boundary / 2048)},
            Config{granularity * (boundary / 2048) * 2},
            Config{granularity * (boundary / 2048) * 3},
            Config{granularity * (boundary / 2048) * 4},
            Config{granularity * (boundary / 2048) * 5},
-           //    Config{granularity * Config{192 / 3, 6 / 3}},
-           //    Config{granularity * Config{192, 18 / 3}},
-           //    Config{granularity * Config{288 / 3, 12 / 3}},
-           //    Config{granularity * Config{288 / 3, 24 / 3}}
-       }) {
+       })
+  #endif
+  {
     printf("===== Start config %d, %d\n", current.first, current.second);
+    auto sampling_start_time = current_seconds();
     CoSchedKernels::Stat stat{};
     double current_time;
-    for (Config step{boundary / 512}, radius{};
-         step.first > 1 || step.second > 1;
-         radius = step * 2,
-         step.first = step.first > 1
-                          ? step.first / std::max(boundary.first / 512 / 4, 2)
-                          : 1,
-         step.second =
-             step.second > 1
-                 ? step.second / std::max(boundary.second / 512 / 4, 2)
-                 : 1) {
-      bool sampling = true;
+    #ifdef SHOW_TRACE_EXP
+    Config step{20, 20};
+    auto next_step = [&](Config prev_step){return Config{
+      // step.first > min_step? step.first / 2 : 1, 
+      // step.second > min_step? step.second / 2 : 1
+      step / 2
+    };};
+    #else
+    Config step{boundary / 512};
+    auto next_step = [&](Config prev_step){return Config{
+      // step.first > min_step
+      //                 ? step.first / std::max(boundary.first / 512 / 4, 2)
+      //                 : min_step, 
+      // step.second > min_step
+      //         ? step.second / std::max(boundary.second / 512 / 4, 2)
+      //         : min_step
+      step.first / std::max(boundary.first / 512 / 4, 2), 
+      step.second / std::max(boundary.second / 512 / 4, 2)
+    };};
+    #endif
+    for (
+      Config radius{};
+      step.first >= min_step || step.second >= min_step;
+      // radius = step * 2,
+      step = next_step(step)) {
       auto res = co_kernel.get_local_optimal(
-          current, step * granularity, subregion, sampling ? 1 : nrepeat,
+          current, step * granularity, subregion, 
+          #if SHOW_TRACE_EXP
+          128,
+          #else
+          sampling ? 1 : nrepeat,
+          #endif
           radius * granularity, &stat, sampling);
 
       current = res.first;
       current_time = res.second;
-      printf("Sampled opt %d %d\n", current.first, current.second);
+      printf("Sampled opt config %d %d (step %d %d)\n", current.first / granularity.first, current.second / granularity.second, step.first, step.second);
     }
-    co_kernel.flush_cache();
+    auto sampling_end_time = current_seconds();
+    sampling_time += sampling_end_time - sampling_start_time;
+    // co_kernel.flush_cache();
     printf(
         "config %d, %d; sampling time %lf, true time %lf; steps %u, cache hit "
         "%u\n",
         current.first, current.second, current_time,
-        co_kernel.eval_cosched_time(current, nrepeat, false, false, false),
+        co_kernel.eval_cosched_time(current, nrepeat, false, false, false, nullptr, 32),
         stat.steps, stat.cache_hit);
   }
+
+  printf("Time taken to do searching: %lf\n", sampling_time);
 }
