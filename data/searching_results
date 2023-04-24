@@ -1,0 +1,144 @@
+== Algorithm Effectiveness
+
++ NVIDIA GeForce MX250
+
+  ```
+  CUDA Version: 12.1
+  ```
+  
+  #table(
+  columns: (auto, auto, auto, auto),
+  inset: 10pt,
+  align: horizon,
+  [Kernels], [*Sampling profiling optimal*], [*Full-execution profiling optimal*],[*Serial*],
+  [`va` & `mm`],
+  $ 0.022515 $,  $ 0.021410 $, $ 0.022301 $,
+  [`va` & `sp`], 
+  $ 0.024782 $, $ 0.023848 $, $ 0.027502 $, 
+  [`va` & `mt`], 
+  $ 0.037898 $, $ 0.038051 $, $ 0.037538 $,
+  [`sp` & `mm`],
+  $ 0.032272 $, $ 0.032338 $, $ 0.032486 $,
+  [`sp` & `mt`],
+  $ 0.040339 $, $ 0.038115 $, $ 0.047706 $,
+  [`mm` & `mt`],
+  $ 0.042165 $, $ 0.042146 $, $ 0.042948 $
+  )
+
+
++ NVIDIA GeForce RTX 2080 Ti
+
+  ```
+  Driver Version: 525.89.02    CUDA Version: 12.0 
+  ```
+
+  #table(
+  columns: (auto, auto, auto, auto),
+  inset: 10pt,
+  align: horizon,
+  [Kernels], [*Sampling profiling optimal*], [*Full-execution profiling optimal*],[*Serial*],
+  [`va` & `mm`],
+  $ 0.001709 $,  $ 0.001703 $, $ 0.001869 $,
+  [`va` & `sp`], 
+  $ 0.002000 $, $ 0.001945 $, $ 0.002652 $, 
+  [`va` & `mt`], 
+  $ 0.002216 $, $ 0.002216 $, $ 0.002234 $,
+  [`sp` & `mm`],
+  $ 0.001963 $, $ 0.001841 $, $ 0.002685 $,
+  [`sp` & `mt`],
+  $ 0.002222 $, $ 0.002133 $, $ 0.002712 $,
+  [`mm` & `mt`],
+  $ 0.002393 $, $ 0.002379 $, $ 0.002493 $
+  )
+
++ NVIDIA GeForce RTX 3080
+
+  ```
+  Driver Version: 525.89.02    CUDA Version: 12.0 
+  ```
+
+  #table(
+  columns: (auto, auto, auto, auto),
+  inset: 10pt,
+  align: horizon,
+  [Kernels], [*Sampling profiling optimal*], [*Full-execution profiling optimal*],[*Serial*],
+  [`va` & `mm`],
+  $ 0.001366 $,  $ 0.001305 $, $ 0.001392 $,
+  [`va` & `sp`], 
+  $ 0.001852 $, $ 0.001820 $, $ 0.002379 $, 
+  [`va` & `mt`], 
+  $ 0.001664 $, $ 0.001665 $, $ 0.001649 $,
+  [`sp` & `mm`],
+  $ 0.001948 $, $ 0.001950 $, $ 0.002507 $,
+  [`sp` & `mt`],
+  $ 0.001963 $, $ 0.001968 $, $ 0.002286 $,
+  [`mm` & `mt`],
+  $ 0.001792 $, $ 0.001747 $, $ 0.001825 $
+  )
+
++ NVIDIA GeForce RTX 3090
+
+  ```
+  CUDA Version: 12.0
+  ```
+  
+  <!-- Large work load: va 1<<29, mm (1<<12)*(1<<12) -->
+  <!-- #table(
+  columns: (auto, auto, auto, auto),
+  inset: 10pt,
+  align: horizon,
+  [Kernels], [*Sampling profiling optimal*], [*Full-execution profiling optimal*],[*Serial*],
+  [`va` & `mm`],
+  $ 0.050426 $,  $ 0.050413 $, $ 0.051281 $,
+  [`va` & `sp`], 
+  $ 0.007693 $, $ 0.007700 $, $ 0.009436 $, 
+  [`va` & `mt`], 
+  $ 0.008665 $, $ 0.008626 $, $ 0.008643 $,
+  [`sp` & `mm`],
+  $ 0.044486 $, $ 0.044234 $, $ 0.044852 $,
+  [`sp` & `mt`],
+  $ 0.001574 $, $ 0.001568 $, $ 0.001789 $,
+  [`mm` & `mt`],
+  $ 0.044268 $, $ 0.044208 $, $ 0.044307 $
+  ) -->
+
+  #table(
+  columns: (auto, auto, auto, auto),
+  inset: 10pt,
+  align: horizon,
+  [Kernels], [*Sampling profiling optimal*], [*Full-execution profiling optimal*],[*Serial*],
+  [`va` & `mm`],
+  $ 0.001111 $,  $ 0.001065 $, $ 0.001251 $,
+  [`va` & `sp`], 
+  $ 0.001544 $, $ 0.001484 $, $ 0.002003 $, 
+  [`va` & `mt`], 
+  $ 0.001380 $, $ 0.001373 $, $ 0.001386 $,
+  [`sp` & `mm`],
+  $ 0.001591 $, $ 0.001594 $, $ 0.002063 $,
+  [`sp` & `mt`],
+  $ 0.001705 $, $ 0.001687 $, $ 0.001807 $,
+  [`mm` & `mt`],
+  $ 0.001474 $, $ 0.001475 $, $ 0.001636 $
+  )
+
+== Algorithm Efficiency
+
++ NVIDIA GeForce RTX 2080 Ti
+  #table(
+  columns: (auto, auto, auto),
+  inset: 10pt,
+  align: horizon,
+  [Kernels], [*Sampling profiling time consumption*], [*Full-execution profiling time consumption*],
+  [`va` & `mm`],
+  $ 0.080218 $,  $ 0.193628 $, 
+  [`va` & `sp`], 
+  $ 0.287850 $, $ 0.363687 $, 
+  [`va` & `mt`], 
+  $ 0.053683 $, $ 0.166032 $, 
+  [`sp` & `mm`],
+  $ 0.207972 $, $ 0.186698 $, 
+  [`sp` & `mt`],
+  $ 0.186882 $, $ 0.208790 $, 
+  [`mm` & `mt`],
+  $ 0.059226 $, $ 0.225624 $, 
+  )

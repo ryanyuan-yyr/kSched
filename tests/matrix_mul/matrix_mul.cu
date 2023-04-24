@@ -135,11 +135,11 @@ EXPORT KernelConfig pre_process() {
   // Use a larger block size for Fermi and above
   // int BLOCK_SIZE = 32;
 
-  // dim3 dimsA(1 << 10, 1 << 10, 1);
-  // dim3 dimsB(1 << 10, 1 << 10, 1);
+  dim3 dimsA(1 << 10, 1 << 10, 1);
+  dim3 dimsB(1 << 10, 1 << 10, 1);
 
-  dim3 dimsA(1 << 12, 1 << 12, 1);
-  dim3 dimsB(1 << 12, 1 << 12, 1);
+  // dim3 dimsA(1 << 12, 1 << 12, 1);
+  // dim3 dimsB(1 << 12, 1 << 12, 1);
 
   if (dimsA.x != dimsB.y) {
     printf("Error: outer matrix dimensions must be equal. (%d != %d)\n",

@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <fstream>
+#include <vector>
+#include <utility>
 
 #include "kosched.cuh"
 
@@ -25,8 +27,8 @@ __host__ int main() {
   Kernel kernel_1{tests[3]};
   Kernel kernel_2{tests[1]};
   #else
-  Kernel kernel_1{tests[0]};
-  Kernel kernel_2{tests[1]};
+  Kernel kernel_1{tests[1]};
+  Kernel kernel_2{tests[2]};
   #endif
   bool sampling = true;
 
@@ -64,6 +66,8 @@ __host__ int main() {
 
   double sampling_time = 0;
   constexpr int min_step = 1;
+
+  std::vector<std::pair<double, Config>> opt_results;
 
   #ifdef SHOW_TRACE_EXP
   for (auto current : {
@@ -123,14 +127,18 @@ __host__ int main() {
     }
     auto sampling_end_time = current_seconds();
     sampling_time += sampling_end_time - sampling_start_time;
+    double true_time = co_kernel.eval_cosched_time(current, nrepeat, false, false, false, nullptr, 32);
     // co_kernel.flush_cache();
+    opt_results.emplace_back(true_time, current);
     printf(
         "config %d, %d; sampling time %lf, true time %lf; steps %u, cache hit "
         "%u\n",
         current.first, current.second, current_time,
-        co_kernel.eval_cosched_time(current, nrepeat, false, false, false, nullptr, 32),
+        true_time,
         stat.steps, stat.cache_hit);
   }
 
   printf("Time taken to do searching: %lf\n", sampling_time);
+  auto& res = *std::min_element(opt_results.begin(), opt_results.end(), [](auto&l, auto&r){return l.first < r.first;});
+  printf("Searching result: %d, %d taking %lf sec\n", res.second.first, res.second.second, res.first);
 }
