@@ -3,7 +3,8 @@ import matplotlib.patches as mpatches
 
 plt.style.use('_mpl-gallery-nogrid')
 
-input_path = r'data\RTX2080Ti\va_1_240_mm_1_61_mannually_correct_for_range_va_4_61_mm_4_61'
+input_path = r'data\MX250_with_temp_detection_wrong_warmup\mm_1_49_sp_1_25'
+
 
 def reverse_2_tuple(t):
     x, y = t
@@ -13,9 +14,9 @@ Z = list()
 
 with open(input_path) as input:
     for line in input:
-        Z.append([float(time) for time in line.split()][4:61])
+        Z.append([float(time) for time in line.split()])#[4:61])
 
-Z = Z[4:61]
+# Z = Z[4:61]
 
 opt_time = None
 x, y = None, None
@@ -46,11 +47,11 @@ for i in range(nslice):
     # [OBSOLETE] Showing searching trace "paper\figures\searching_trace\[OBSOLETE] searching_trace_va_mm.png"
     # delta = 0.2
     # for start, end in [
-    #     ((4, 1), (4, 9)), 
-    #     ((4, 9), (4, 17-delta)), 
-    #     ((4, 17-delta), (2, 17-delta)), 
-    #     ((2, 17+delta), (3, 17+delta)), 
-    #     ((3, 17+delta), (3, 19)), 
+    #     ((4, 1), (4, 9)),
+    #     ((4, 9), (4, 17-delta)),
+    #     ((4, 17-delta), (2, 17-delta)),
+    #     ((2, 17+delta), (3, 17+delta)),
+    #     ((3, 17+delta), (3, 19)),
     #     ((3, 19), (3, 20))
     # ]:
     #     arrow = mpatches.FancyArrowPatch(reverse_2_tuple(start), reverse_2_tuple(end),

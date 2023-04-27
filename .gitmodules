@@ -1,3 +1,6 @@
 [submodule "paper"]
 	path = paper
 	url = https://github.com/ryanyuan-yyr/undergrad-thesis-koSched.git
+[submodule "cuda_scheduling_examiner_mirror"]
+	path = cuda_scheduling_examiner_mirror
+	url = https://github.com/ryanyuan-yyr/cuda_scheduling_examiner_mirror
