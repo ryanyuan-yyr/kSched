@@ -1,5 +1,3 @@
-runtest: 
-
 TESTS := build/matrix_mul.so build/matrix_transpose.so build/sqrt_pow.so build/vec_add.so
 # TESTS := build/matrix_transpose.so
 CFLAGS := -Wall -Werror -O3 -g -fPIC
@@ -9,13 +7,13 @@ COMMON_DEPENDENCY := include/* build/utility.o
 
 # runtests
 
-runtests:build_runtests
-	./bin/runtests
+run_tests:build_run_tests
+	./bin/run_tests
 
-build_runtests: bin/runtests
+build_run_tests: bin/run_tests
 
-bin/runtests: build/run_tests.o $(TESTS) $(COMMON_DEPENDENCY)
-	$(NVCC) build/run_tests.o $(NVCC_FLAGS) $(TESTS) build/utility.o -o bin/runtests
+bin/run_tests: build/run_tests.o $(TESTS) $(COMMON_DEPENDENCY)
+	$(NVCC) build/run_tests.o $(NVCC_FLAGS) $(TESTS) build/utility.o -o bin/run_tests
 
 build/run_tests.o: src/run_tests.cu $(COMMON_DEPENDENCY)
 	$(NVCC) -c src/run_tests.cu $(NVCC_FLAGS) -o build/run_tests.o
